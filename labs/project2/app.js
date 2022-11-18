@@ -18,14 +18,17 @@ let animation = true;   // Animation is running
 
 let altitude = 0;
 let inclination = 0;
+let movingfoward = false; 
 
 const FLOOR_LENGTH = 500;
-const VP_DISTANCE = FLOOR_LENGTH/4;
+const VP_DISTANCE = FLOOR_LENGTH/2;
 
-const MAX_FLIGT_HEIGHT = 100;
-const FLIGHT_SPEED = 30;
+const MAX_FLIGT_HEIGHT = 1000;
+const FLIGHT_SPEED = 0.15;
 const FLIGHT_RADIUS = 30/2;
 const PROPELLER_SPEED = 500;
+
+const HELI_SIZE_MULT = 6;
 const PROPELLER_LENGTH = 4;
 const ROTOR_LENGHT = 0.75;
 const COCKPIT_DIAMETER = 3;
@@ -69,33 +72,39 @@ function setup(shaders)
             case '-':
                 if(animation) speed /= 1.1;
                 break;
+            case 'ArrowUp':
+                if(altitude<MAX_FLIGT_HEIGHT){
+                    altitude++;
+                }
+                break;
+            case 'ArrowDown':
+                if(altitude > 1){
+                    altitude--;
+                }else if(altitude == 1 && inclination == 0){
+                    altitude--;
+                }
+                break;
+            case 'ArrowLeft':
+                if(altitude > 0 && inclination < 30){
+                    inclination = inclination + 0.5;
+                    movingfoward = true;
+                }
+                break;
+            default:
+                if(inclination >0){
+                    inclination--;
+                }
+                break;
         }
     }
 
-    let mouseX, mouseY;
-    document.addEventListener("mousemove", function (event){
-
-        if(mouseY > event.clientY){
-            altitude++;
-        }else if(mouseY < event.clientY){
-            if(altitude !=0){
-                altitude--;
-            } 
-        }else if(mouseX > event.clientX){
-            if(altitude !=0 && inclination < 30){
-                inclination = inclination + 0.05;
-            }
-        }else if(mouseX <= event.clientX){
-            if(inclination >=0){
-                inclination = inclination - 0.05;
-            }
+    document.onkeyup = function(event) {
+        switch(event.key) {
+            case 'ArrowLeft':
+                movingfoward = false;
+                break;
         }
-        mouseX = event.clientX; // x position of the cursor
-        mouseY = event.clientY; // y position of the cursor
-        //console.log(mouseX);
-        //console.log(mouseY);
-        console.log(inclination);
-    })
+    }
     
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     SPHERE.init(gl);
@@ -342,23 +351,30 @@ function setup(shaders)
     let heliRotation = 0;
     let pos = 0;
     function World(){
-        multRotationY(0);
+        multRotationY(30);
         pushMatrix();//--world floor----
             Ground();
         popMatrix();
         pushMatrix();//------heli-------
-            multScale([6, 6, 6]);
+            multScale([HELI_SIZE_MULT, HELI_SIZE_MULT, HELI_SIZE_MULT]);
             if(altitude != 0){
                 multRotationZ(inclination);
-                // pos = pos + 0.02;
-                // heliRotation = pos*FLIGHT_SPEED;
-                // multRotationY(heliRotation);
+                if(movingfoward){
+                    pos = pos + speed;
+                    heliRotation = pos*360*FLIGHT_SPEED; 
+                }else{
+                    if(inclination > 0){
+                        inclination = inclination - 0.25;
+                    }
+                }
+                multRotationY(heliRotation);
                 multTranslation([FLIGHT_RADIUS, altitude/15, 0]);
-                // multRotationY(-90);
+                multRotationY(-90);
+
             }else{
-                // multRotationY(heliRotation);
-                // multTranslation([FLIGHT_RADIUS, 0, 0]);
-                // multRotationY(-90);
+                multRotationY(heliRotation);
+                multTranslation([FLIGHT_RADIUS, 0, 0]);
+                multRotationY(-90);
             }
             Helicopter();
         popMatrix();
