@@ -1,5 +1,5 @@
-import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../../libs/utils.js";
-import { ortho, lookAt, flatten, rotateY } from "../../libs/MV.js";
+import { buildProgramFromSources, loadShadersFromURLS, setupWebGL} from "../../libs/utils.js";
+import { ortho, lookAt, flatten, rotateY, vec3 } from "../../libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multRotationX, multRotationZ, multScale, pushMatrix, popMatrix, multTranslation } from "../../libs/stack.js";
 
 import * as SPHERE from '../../libs/objects/sphere.js';
@@ -18,10 +18,12 @@ let animation = true;   // Animation is running
 
 let altitude = 0;
 let inclination = 0;
-let movingfoward = false; 
+let movingfoward = false;
+let aceleration = 0;
 
 const FLOOR_LENGTH = 500;
-const VP_DISTANCE = FLOOR_LENGTH/2;
+const FLOOR_COLOR = vec3(0.1, 0.1, 0.1);
+const VP_DISTANCE = FLOOR_LENGTH/4;
 
 const MAX_FLIGT_HEIGHT = 1000;
 const FLIGHT_SPEED = 0.15;
@@ -30,12 +32,19 @@ const PROPELLER_SPEED = 500;
 
 const HELI_SIZE_MULT = 6;
 const PROPELLER_LENGTH = 4;
+const PROPELLER_COLOR =  vec3(0.4, 0.5, 0.4);
 const ROTOR_LENGHT = 0.75;
+const ROTOR_COLOR =  vec3(0.4, 0.5, 0.4);
+const COWLING_COLOR = vec3(0.2, 0.2, 0.1);
 const COCKPIT_DIAMETER = 3;
+const COCKPIT_COLOR = vec3(0.2, 0.2, 0.1);
 const TAIL_DIAMETER = 6.5;
+const TAIL_COLOR =  vec3(0.4, 0.5, 0.4);
 const FIN_DIAMETER = 2;
+const FIN_COLOR = vec3(0.2, 0.2, 0.1);
 const FEET_LENGTH = 2.5;
 const FEET_DISTANCE = 1;
+const FEET_COLOR = vec3(0.4, 0.5, 0.4);
 
 
 
@@ -90,6 +99,9 @@ function setup(shaders)
                     movingfoward = true;
                 }
                 break;
+            case 'Space':
+                console.log(altitude);
+                break;   
             default:
                 if(inclination >0){
                     inclination--;
@@ -277,9 +289,12 @@ function setup(shaders)
             Skid();
         popMatrix();
     }
-
+    const uColor = gl.getUniformLocation(program, "uColor");
+   
     function Helicopter(){
-        pushMatrix();//---top propellers--
+        
+        pushMatrix();//---top propellers---
+            gl.uniform3fv(uColor, PROPELLER_COLOR);
             multTranslation([0.5, 4, 0]);
             if(altitude != 0){
                 multRotationY(time*PROPELLER_SPEED);
@@ -287,6 +302,7 @@ function setup(shaders)
             Propellers(); 
         popMatrix();
         pushMatrix();//-----top rotor------
+            gl.uniform3fv(uColor, ROTOR_COLOR);
             multTranslation([0.5, 3.75, 0]);
             if(altitude != 0){
                 multRotationY(time*PROPELLER_SPEED);
@@ -294,18 +310,22 @@ function setup(shaders)
             Top_Rotor();
         popMatrix();
         pushMatrix();//-----cowling--------
+            gl.uniform3fv(uColor, COWLING_COLOR);
             multTranslation([0.5, 2.75, 0]);
             Cowling();
         popMatrix();
         pushMatrix();//-----cockpit-------
+            gl.uniform3fv(uColor, COCKPIT_COLOR);
             multTranslation([0, 1.5, 0]);
             Cockpit();
         popMatrix();
         pushMatrix();//------tail---------
+            gl.uniform3fv(uColor, TAIL_COLOR);
             multTranslation([3.25, 1.75, 0]);
             Tail();
         popMatrix();
         pushMatrix();//---tail rotor------
+            gl.uniform3fv(uColor, ROTOR_COLOR);
             multTranslation([6.975, 2.4, 0.1]);
             multRotationX(90);
             if(altitude != 0){
@@ -314,6 +334,7 @@ function setup(shaders)
             Tail_Rotor();
         popMatrix();
         pushMatrix();//--tail proppelers--
+            gl.uniform3fv(uColor, PROPELLER_COLOR);
             multTranslation([6.975, 2.4, 0.2]);
             multScale([0.25, 0.25, 0.25]);
             multRotationX(90);
@@ -323,14 +344,17 @@ function setup(shaders)
             Propellers();
         popMatrix();
         pushMatrix();//-------fin---------
+            gl.uniform3fv(uColor, FIN_COLOR);
             multTranslation([6.975, 2.4, 0]);
             multRotationZ(45);
             Fin();
         popMatrix();
         pushMatrix();//-----supports------
+            gl.uniform3fv(uColor, FEET_COLOR);
             Supports();
         popMatrix();
         pushMatrix();//------skids---------
+            gl.uniform3fv(uColor, FEET_COLOR);
             Skids();
         popMatrix(); 
         // pushMatrix();//teste comprimento 10
@@ -353,6 +377,7 @@ function setup(shaders)
     function World(){
         multRotationY(30);
         pushMatrix();//--world floor----
+        gl.uniform3fv(uColor, FLOOR_COLOR);
             Ground();
         popMatrix();
         pushMatrix();//------heli-------
