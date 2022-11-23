@@ -26,8 +26,9 @@ const FLOOR_COLOR = vec3(0.1, 0.1, 0.1);
 const VP_DISTANCE = FLOOR_LENGTH/4;
 
 const MAX_FLIGT_HEIGHT = 1000;
-const FLIGHT_SPEED = 0.15;
+const FLIGHT_SPEED = 1;
 const FLIGHT_RADIUS = 30/2;
+const INCLINATION_SPEED = 0.25;
 const PROPELLER_SPEED = 500;
 
 const HELI_SIZE_MULT = 6;
@@ -40,7 +41,7 @@ const COCKPIT_DIAMETER = 3;
 const COCKPIT_COLOR = vec3(0.2, 0.2, 0.1);
 const TAIL_DIAMETER = 6.5;
 const TAIL_COLOR =  vec3(0.4, 0.5, 0.4);
-const FIN_DIAMETER = 2;
+//const FIN_DIAMETER = 2;
 const FIN_COLOR = vec3(0.2, 0.2, 0.1);
 const FEET_LENGTH = 2.5;
 const FEET_DISTANCE = 1;
@@ -59,7 +60,7 @@ function setup(shaders)
 
     let mProjection = ortho(-VP_DISTANCE*aspect,VP_DISTANCE*aspect, -VP_DISTANCE, VP_DISTANCE,-3*VP_DISTANCE,3*VP_DISTANCE);
 
-    mode = gl.LINES; 
+    mode = gl.TRIANGLES; //starting mode
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
@@ -95,7 +96,7 @@ function setup(shaders)
                 break;
             case 'ArrowLeft':
                 if(altitude > 0 && inclination < 30){
-                    inclination = inclination + 0.5;
+                    //inclination = inclination + 0.5;
                     movingfoward = true;
                 }
                 break;
@@ -382,19 +383,23 @@ function setup(shaders)
         popMatrix();
         pushMatrix();//------heli-------
             multScale([HELI_SIZE_MULT, HELI_SIZE_MULT, HELI_SIZE_MULT]);
+            console.log(inclination);
             if(altitude != 0){
-                multRotationZ(inclination);
                 if(movingfoward){
-                    pos = pos + speed;
-                    heliRotation = pos*360*FLIGHT_SPEED; 
+                    if(inclination < 30){
+                        inclination = inclination + INCLINATION_SPEED;
+                    }
                 }else{
                     if(inclination > 0){
-                        inclination = inclination - 0.25;
+                    inclination = inclination - INCLINATION_SPEED;
+                    pos = pos + inclination/8;
                     }
-                }
+                } 
+                heliRotation = heliRotation + inclination/40 * FLIGHT_SPEED;
                 multRotationY(heliRotation);
                 multTranslation([FLIGHT_RADIUS, altitude/15, 0]);
                 multRotationY(-90);
+                multRotationZ(inclination);
 
             }else{
                 multRotationY(heliRotation);
