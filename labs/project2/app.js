@@ -19,18 +19,26 @@ let animation = true;   // Animation is running
 let altitude = 0;
 let inclination = 0;
 let movingfoward = false;
-let aceleration = 0;
+let dropped_box = false;
+let box_rotation = 0;
+let heliRotation = 0;
+let box_pos = 0; //NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+let box_speed = 0;
+
 
 const FLOOR_LENGTH = 500;
 const FLOOR_COLOR = vec3(0.1, 0.1, 0.1);
 const VP_DISTANCE = FLOOR_LENGTH/4;
 
-const MAX_FLIGT_HEIGHT = 1000;
+//heli flight parameters
+const MAX_INCLINATION = 30;
+const MAX_FLIGT_HEIGHT = 200;
 const FLIGHT_SPEED = 1;
 const FLIGHT_RADIUS = 30/2;
 const INCLINATION_SPEED = 0.25;
 const PROPELLER_SPEED = 500;
 
+//heli size and color parameters
 const HELI_SIZE_MULT = 6;
 const PROPELLER_LENGTH = 4;
 const PROPELLER_COLOR =  vec3(0.4, 0.5, 0.4);
@@ -47,6 +55,9 @@ const FEET_LENGTH = 2.5;
 const FEET_DISTANCE = 1;
 const FEET_COLOR = vec3(0.4, 0.5, 0.4);
 
+//box dimensions parameters
+const BOX_LENGHT = 5;
+
 
 
 function setup(shaders)
@@ -61,6 +72,8 @@ function setup(shaders)
     let mProjection = ortho(-VP_DISTANCE*aspect,VP_DISTANCE*aspect, -VP_DISTANCE, VP_DISTANCE,-3*VP_DISTANCE,3*VP_DISTANCE);
 
     mode = gl.TRIANGLES; //starting mode
+
+    const uColor = gl.getUniformLocation(program, "uColor"); //color
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
@@ -84,29 +97,27 @@ function setup(shaders)
                 break;
             case 'ArrowUp':
                 if(altitude<MAX_FLIGT_HEIGHT){
-                    altitude++;
+                    altitude = altitude + 2;
                 }
                 break;
             case 'ArrowDown':
-                if(altitude > 1){
-                    altitude--;
-                }else if(altitude == 1 && inclination == 0){
-                    altitude--;
+                if(altitude > 2){
+                    altitude = altitude - 2;
+                }else if(altitude == 2 && inclination == 0){
+                    altitude = altitude - 2;
                 }
                 break;
             case 'ArrowLeft':
-                if(altitude > 0 && inclination < 30){
+                if(altitude > 0 && inclination < MAX_INCLINATION){
                     //inclination = inclination + 0.5;
                     movingfoward = true;
                 }
                 break;
-            case 'Space':
-                console.log(altitude);
-                break;   
-            default:
-                if(inclination >0){
-                    inclination--;
-                }
+            case ' ':
+                if(altitude > 1)
+                dropped_box = true;
+                box_rotation = heliRotation;
+                box_speed = inclination;
                 break;
         }
     }
@@ -115,6 +126,10 @@ function setup(shaders)
         switch(event.key) {
             case 'ArrowLeft':
                 movingfoward = false;
+                break;
+
+            case ' ':
+                dropped_box = false;
                 break;
         }
     }
@@ -150,7 +165,7 @@ function setup(shaders)
     function Ground()
     {
         multScale([FLOOR_LENGTH, FLOOR_LENGTH/10, FLOOR_LENGTH]);
-        multTranslation([0, -FLOOR_LENGTH/1000, 0]);
+        multTranslation([0, -FLOOR_LENGTH/(FLOOR_LENGTH*2), 0]);
 
         // Send the current modelview matrix to the vertex shader
         uploadModelView();
@@ -198,7 +213,7 @@ function setup(shaders)
         CYLINDER.draw(gl, program, mode);
     }
 
-    function Cowling(){
+    function Cowling(){ //where there top rotor meets the cockpit
         multScale([COCKPIT_DIAMETER/1.5, COCKPIT_DIAMETER/3, COCKPIT_DIAMETER/1.5]);
         multRotationX(90);
         // Send the current modelview matrix to the vertex shader
@@ -230,7 +245,7 @@ function setup(shaders)
         CYLINDER.draw(gl, program, mode);
     }
 
-    function Fin(){
+    function Fin(){ // the tipy top of the tail where is the small rotor
         multScale([TAIL_DIAMETER/3, TAIL_DIAMETER/20, TAIL_DIAMETER/40]);
         
         // Send the current modelview matrix to the vertex shader
@@ -271,7 +286,7 @@ function setup(shaders)
         popMatrix();
     }
 
-    function Skid(){ //the metal bar that touches the ground
+    function Skid(){ //the metal bar that touches the ground (the "foot")
         multScale([FEET_LENGTH/20, FEET_LENGTH, FEET_LENGTH/20]);
         
         // Send the current modelview matrix to the vertex shader
@@ -290,7 +305,13 @@ function setup(shaders)
             Skid();
         popMatrix();
     }
-    const uColor = gl.getUniformLocation(program, "uColor");
+    
+    function Box(){ 
+        multScale([BOX_LENGHT, BOX_LENGHT, BOX_LENGHT]);
+        // Send the current modelview matrix to the vertex shader
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
    
     function Helicopter(){
         
@@ -373,8 +394,7 @@ function setup(shaders)
     //     CUBE.draw(gl, program, mode);
     // }
 
-    let heliRotation = 0;
-    let pos = 0;
+    
     function World(){
         multRotationY(30);
         pushMatrix();//--world floor----
@@ -383,21 +403,19 @@ function setup(shaders)
         popMatrix();
         pushMatrix();//------heli-------
             multScale([HELI_SIZE_MULT, HELI_SIZE_MULT, HELI_SIZE_MULT]);
-            console.log(inclination);
             if(altitude != 0){
                 if(movingfoward){
-                    if(inclination < 30){
+                    if(inclination < MAX_INCLINATION){
                         inclination = inclination + INCLINATION_SPEED;
                     }
                 }else{
                     if(inclination > 0){
                     inclination = inclination - INCLINATION_SPEED;
-                    pos = pos + inclination/8;
                     }
                 } 
                 heliRotation = heliRotation + inclination/40 * FLIGHT_SPEED;
                 multRotationY(heliRotation);
-                multTranslation([FLIGHT_RADIUS, altitude/15, 0]);
+                multTranslation([FLIGHT_RADIUS, altitude, 0]);
                 multRotationY(-90);
                 multRotationZ(inclination);
 
@@ -408,7 +426,25 @@ function setup(shaders)
             }
             Helicopter();
         popMatrix();
+        //---------------box----------------
         
+        //if(dropped_box){
+            box_pos = box_pos + box_speed/40 * FLIGHT_SPEED;
+            multRotationY(box_rotation);
+            //multRotationX(Math.cos(heliRotation));
+            //multRotationZ(-Math.sin(heliRotation));
+            console.log(box_pos);
+            let x = Math.cos(box_rotation)*box_pos;
+            let z = -Math.sin(box_rotation)*box_pos;
+            multTranslation([x, altitude, z]);
+            
+            //multTranslation([Math.cos(heliRotation), 0, -Math.sin(heliRotation)]);
+            multRotationY(-90);
+            Box();
+        ///}
+        
+        // angulo * velocidade_angular = speed
+        // speed*(cos(angulo), -sin(angulo))
     }
 
     function render()
