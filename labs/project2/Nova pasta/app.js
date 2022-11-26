@@ -191,7 +191,7 @@ function setup(shaders) {
   resize_canvas();
   window.addEventListener("resize", resize_canvas);
 
-  program = buildProgramFromSources(gl,shaders["shader1.vert"],shaders["shader1.frag"]);
+  program = buildProgramFromSources(gl,shaders["shader.vert"],shaders["shader.frag"]);
 
   var gui = new dat.GUI({ name: "My GUI" });
   gui.addFolder("Axonometric Projection Values");
@@ -200,7 +200,7 @@ function setup(shaders) {
   var slider2 = gui.add(person, "gamma", 0, 1);
 
   slider1.onChange(function (value) {
-    teta = value*360;
+    teta = value * 360;
     floorHeigth = -7;
     calculateNewAltitude(2);
     previousMode = 2;
@@ -208,7 +208,7 @@ function setup(shaders) {
   });
 
   slider2.onChange(function (value) {
-    gamma = value*360;
+    gamma = value * 360;
     floorHeigth = -7;
     calculateNewAltitude(2);
     previousMode = 2;
@@ -998,11 +998,10 @@ function animate() {
 //---------------box----------------
   if(box_falling_timer>0 && box_falling_timer<5){
     multRotationY(box_rotation);
-    if(box_speed > 0){
+    if(box_speed > 0)
       box_speed = box_speed - BOX_FRICTION_SPEED;
-    } else if(box_speed <= 0){
-      box_speed = 0;
-    }
+    else if(box_speed <= 0)
+    box_speed = 0;
     box_pos = box_pos + box_speed/1000 * FLIGHT_SPEED;
     multTranslation([(FLIGHT_RADIUS/10), box_altitude/10, 0]);
     
@@ -1026,6 +1025,6 @@ function animate() {
 }
 
 
-loadShadersFromURLS(["shader1.vert", "shader1.frag"]).then((shaders) =>
+loadShadersFromURLS(["shader.vert", "shader.frag"]).then((shaders) =>
   setup(shaders)
 );
